@@ -1,7 +1,7 @@
 # Dockerfile
 
 # 1. Verwende ein offizielles Maven-Java-Image als Basis
-FROM maven:3.8.6-openjdk-17 AS build
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 
 # 2. Setze das Arbeitsverzeichnis
 WORKDIR /app
