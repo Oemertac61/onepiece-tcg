@@ -1,7 +1,7 @@
 services:
   - type: web
     name: onepiece-tcg
-    runtime: java
+    runtime: native
     buildCommand: mvn clean package
     startCommand: java -jar target/characterdb-0.0.1-SNAPSHOT.jar
     plan: free
