@@ -6,4 +6,6 @@ RUN mvn clean package -DskipTests
 FROM openjdk:17-jdk-slim
 WORKDIR /app
 COPY --from=build /app/target/characterdb-0.0.1-SNAPSHOT.jar app.jar
-ENTRYPOINT ["java", "-cp", "app.jar", "org.springframework.boot.loader.launch.JarLauncher"]
+
+# 👉 Neue Lösung: direkt als -jar starten, ABER korrekten Namen verwenden
+ENTRYPOINT ["java", "-jar", "app.jar"]
