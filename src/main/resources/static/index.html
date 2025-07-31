@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>One Piece TCG Sammlung</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #d32f2f;
+    }
+
+    form {
+      margin-bottom: 20px;
+    }
+
+    input, textarea {
+      margin: 5px;
+      padding: 8px;
+      width: 200px;
+    }
+
+    #cardList {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .card {
+      background-color: white;
+      border: 1px solid #ccc;
+      padding: 10px;
+      width: 250px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+	  cursor: grab;       /* NEU */
+    }
+	
+	.card:hover {
+	  transform: scale(1.02);
+	  transition: transform 0.2s ease-in-out;
+	}
+
+    .card img {
+      width: 100%;
+      height: auto;
+    }
+	
+	.effect-text {
+	  height: 190px;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	}
+	
+	.form-actions {
+	  display: flex;
+	  align-items: center;
+	  margin-top: 10px;
+	}
+
+	.sort-wrapper {
+	  display: flex;
+	  align-items: center;
+	  gap: 10px;
+	  margin-left: 1800px; /* ← Hier passt du den Abstand an */
+	}
+
+
+	.logo {
+	  height: 200px; /* ungefähr so hoch wie deine bisherige Überschrift */
+	  object-fit: contain;
+	}
+
+    button {
+      padding: 8px 12px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <img src="https://game.kiwi/wp-content/vivienne/cache/uploads/2022/09/one-piece-card-game-logo-1.png.webp" alt="One Piece Logo" class="logo">
+
+  <form id="cardForm">
+    <input type="text" id="name" placeholder="Name" required>
+    <input type="text" id="cardType" placeholder="Typ (Leader, Charakter...)">
+    <input type="text" id="color" placeholder="Farbe">
+    <input type="text" id="attribute" placeholder="Attribut">
+    <input type="number" id="power" placeholder="Power">
+    <input type="number" id="cost" placeholder="Kosten">
+    <input type="text" id="imageUrl" placeholder="Bild-URL">
+    <br>
+    <textarea id="effect" placeholder="Effekt / Beschreibung" rows="3" cols="50"></textarea>
+    <br>
+
+	<div class="form-actions">
+	  <button type="submit" style="margin-left: 7px;">Karte hinzufügen</button>
+	  <div class="sort-wrapper">
+	    <label for="sortSelect">Sortieren nach:</label>
+	    <select id="sortSelect" onchange="sortCards(this.value)">
+	      <option value="">Keine Sortierung</option>
+	      <option value="name">Name (A–Z)</option>
+	      <option value="power">Power (aufsteigend)</option>
+	      <option value="cost">Kosten (aufsteigend)</option>
+	      <option value="color">Farbe (A–Z)</option>
+	    </select>
+	  </div>
+	</div>
+
+  </form>
+
+  <h2>📋 Meine Karten</h2>
+  <div id="cardList"></div>
+  
+  <label for="sortSelect">Sortieren nach:</label>
+  <select id="sortSelect" onchange="sortCards(this.value)">
+    <option value="">Keine Sortierung</option>
+    <option value="name">Name (A–Z)</option>
+    <option value="power">Power (aufsteigend)</option>
+    <option value="cost">Kosten (aufsteigend)</option>
+    <option value="color">Farbe (A–Z)</option>
+  </select>
+
+  <script>
+	const apiUrl = '/cards';
+	let editCardId = null;
+	let currentCards = []; // GLOBALE Variable – nicht in editCard!
+
+	function loadCards() {
+	  fetch(apiUrl)
+	    .then(res => res.json())
+	    .then(data => {
+	      currentCards = data;
+	      renderCards(currentCards);
+	    });
+	}
+
+	function renderCards(cards) {
+		const savedOrder = JSON.parse(localStorage.getItem('cardOrder'));
+		if (savedOrder) {
+		  cards.sort((a, b) => savedOrder.indexOf(String(a.id)) - savedOrder.indexOf(String(b.id)));
+		}
+	  const list = document.getElementById('cardList');
+	  list.innerHTML = '';
+	  cards.forEach(c => {
+	    const div = document.createElement('div');
+	    div.className = 'card';
+		div.dataset.id = c.id;
+	    div.innerHTML = `
+	      <img src="${c.imageUrl || 'https://placehold.co/250x150'}" alt="${c.name}">
+	      <h3>${c.name}</h3>
+	      <p><strong>Typ:</strong> ${c.cardType || '—'}</p>
+	      <p><strong>Farbe:</strong> ${c.color || '—'}</p>
+	      <p><strong>Attribut:</strong> ${c.attribute || '—'}</p>
+	      <p><strong>Power:</strong> ${c.power || 0}</p>
+	      <p><strong>Kosten:</strong> ${c.cost || 0}</p>
+	      <p class="effect-text"><strong>Effekt:</strong> ${c.effect || '—'}</p>
+	      <button onclick="editCard(${c.id})">Bearbeiten</button>
+	      <button onclick="deleteCard(${c.id})">Löschen</button>
+	    `;
+	    list.appendChild(div);
+	  });
+	  enableCardDragAndDrop();
+	}
+
+	function sortCards(criteria) {
+	  let sorted = [...currentCards];
+
+	  switch (criteria) {
+	    case 'name':
+	      sorted.sort((a, b) => a.name.localeCompare(b.name));
+	      break;
+	    case 'power':
+	      sorted.sort((a, b) => (a.power || 0) - (b.power || 0));
+	      break;
+	    case 'cost':
+	      sorted.sort((a, b) => (a.cost || 0) - (b.cost || 0));
+	      break;
+	    case 'color':
+	      sorted.sort((a, b) => (a.color || '').localeCompare(b.color || ''));
+	      break;
+	    default:
+	      break;
+	  }
+
+	  renderCards(sorted);
+	}
+	
+	
+	function enableCardDragAndDrop() {
+	  let draggedCard = null;
+
+	  document.querySelectorAll('.card').forEach(card => {
+	    card.setAttribute('draggable', true);
+
+	    card.addEventListener('dragstart', () => {
+	      draggedCard = card;
+	      setTimeout(() => card.style.display = 'none', 0); // verstecken beim Ziehen
+	    });
+
+	    card.addEventListener('dragend', () => {
+	      card.style.display = 'block';
+	      draggedCard = null;
+	    });
+
+	    card.addEventListener('dragover', (e) => {
+	      e.preventDefault();
+	      card.classList.add('drag-over');
+	    });
+
+	    card.addEventListener('dragleave', () => {
+	      card.classList.remove('drag-over');
+	    });
+
+	    card.addEventListener('drop', () => {
+	      card.classList.remove('drag-over');
+	      if (draggedCard && draggedCard !== card) {
+	        const container = document.getElementById('cardList');
+	        const cards = Array.from(container.children);
+	        const draggedIndex = cards.indexOf(draggedCard);
+	        const droppedIndex = cards.indexOf(card);
+
+	        if (draggedIndex < droppedIndex) {
+	          container.insertBefore(draggedCard, card.nextSibling);
+	        } else {
+	          container.insertBefore(draggedCard, card);
+	        }
+			// Reihenfolge speichern
+			const newOrder = Array.from(container.children).map(c => c.dataset.id);
+		    localStorage.setItem('cardOrder', JSON.stringify(newOrder));
+	      }
+	    });
+	  });
+	}
+
+	  document.getElementById('cardForm').addEventListener('submit', function(e) {
+	    e.preventDefault();
+
+	    const card = {
+	      name: document.getElementById('name').value,
+	      cardType: document.getElementById('cardType').value,
+	      color: document.getElementById('color').value,
+	      attribute: document.getElementById('attribute').value,
+	      power: parseInt(document.getElementById('power').value) || 0,
+	      cost: parseInt(document.getElementById('cost').value) || 0,
+	      effect: document.getElementById('effect').value,
+	      imageUrl: document.getElementById('imageUrl').value
+	    };
+
+	    const method = editCardId ? 'PUT' : 'POST';
+	    const url = editCardId ? `${apiUrl}/${editCardId}` : apiUrl;
+
+	    fetch(url, {
+	      method: method,
+	      headers: { 'Content-Type': 'application/json' },
+	      body: JSON.stringify(card)
+	    })
+	    .then(response => {
+	      if (!response.ok) throw new Error('Fehler beim Speichern');
+	      return response.json();
+	    })
+	    .then(() => {
+	      this.reset();
+	      loadCards();
+	      editCardId = null;
+	      document.querySelector('#cardForm button').textContent = "Karte hinzufügen";
+	    })
+	    .catch(err => {
+	      alert("Fehler beim Speichern: " + err.message);
+	    });
+	  });
+	  
+	  function deleteCard(id) {
+	    if (!confirm('Willst du diese Karte wirklich löschen?')) return;
+
+	    fetch(`${apiUrl}/${id}`, {
+	      method: 'DELETE'
+	    })
+	    .then(res => {
+	      if (!res.ok) throw new Error('Fehler beim Löschen');
+	      loadCards(); // neu laden nach dem Löschen
+	    })
+	    .catch(err => alert("Fehler beim Löschen: " + err.message));
+	  }
+
+	  loadCards();
+  </script>
+</body>
+</html>

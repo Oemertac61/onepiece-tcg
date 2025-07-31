@@ -1,0 +1,12 @@
+# Ignore IDE files
+.classpath
+.project
+.settings/
+
+# Ignore build output
+target/
+
+# Ignore database files
+data/
+*.mv.db
+*.h2.db
