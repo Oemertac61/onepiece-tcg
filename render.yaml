@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: onepiece-tcg
+    env: java
+    buildCommand: mvn clean package
+    startCommand: java -jar target/characterdb-0.0.1-SNAPSHOT.jar
+    plan: free
+    branch: main
