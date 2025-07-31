@@ -59,10 +59,15 @@
   <build>
     <plugins>
       <!-- Spring Boot Plugin -->
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-      </plugin>
+     <plugin>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-maven-plugin</artifactId>
+  <configuration>
+    <mainClass>com.onepiece.characterdb.CharacterDbApplication</mainClass>
+  </configuration>
+</plugin>
+
+
 
       <!-- Ressourcen Plugin explizit -->
       <plugin>
