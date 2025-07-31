@@ -1,7 +1,7 @@
 services:
   - type: web
     name: onepiece-tcg
-    runtime: docker
+    env: docker
     plan: free
     branch: main
-    dockerfilePath: ./Dockerfile
+    rootDir: .
